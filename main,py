@@ -76,4 +76,6 @@ while True:
     else:
         df_novo.to_csv(arquivo, index=False, encoding='utf-8-sig')
 
+    driver.quit()
+
     sleep(300)
