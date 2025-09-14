@@ -1,0 +1,79 @@
+from inspect import Traceback
+from traceback import TracebackException
+from datetime import datetime
+from selenium import webdriver
+from selenium.common import NoSuchElementException
+from selenium.webdriver.common.by import By
+import pandas as pd
+import os
+from time import sleep
+
+
+while True:
+
+    driver = webdriver.Chrome()
+    driver.get("https://www.speedtest.net/pt")
+    driver.minimize_window()
+    print('Conectando ao servidor...')
+
+    arquivo = "testeinternet.csv"
+    agora = datetime.now()
+
+    while True:
+        try:
+            teste = driver.find_element(By.XPATH, "//span[@class='start-text']")
+            teste.click()
+            driver.minimize_window()
+            break
+        except Exception as e:
+            print('Tentando de novo...', e)
+            driver.maximize_window()
+            sleep(10)
+
+
+    print("Testando Download...")
+    sleep(25)
+    print('Testando Upload...')
+    sleep(20)
+    print("Recebendo resultados...")
+    sleep(20)
+    download = driver.find_element(By.XPATH, "//span[@class='result-data-large number result-data-value download-speed']")
+    while True:
+        upload = driver.find_element(By.XPATH, "//span[@class='result-data-large number result-data-value upload-speed']")
+        if not '—' in upload.text:
+            break
+        else:
+            print('Aguardando resultados...')
+            sleep(10)
+    print('Download - {}'.format(download.text))
+    print('Upload - {}'.format(upload.text))
+
+    if  float(download.text) <= 99 and float(upload.text) <= 99:
+        status= "lento"
+        print("STATUS: INTERNET LENTA")
+    elif 100 <= float(download.text) < 200 and 100 <= float(upload.text) < 200:
+        print("STATUS: INTERNET OK")
+        status = "razoável"
+    else:
+        status = "rápida"
+        print("STATUS: INTERNET RÁPIDA")
+
+
+    df_novo = pd.DataFrame([{
+        "Rede": "Terra.5G",
+        "Download": download.text,
+        "Upload": upload.text,
+        "Hora": agora.strftime("%H:%M:%S"),
+        "Dia": agora.strftime("%d/%m/%Y"),
+        "Status": status
+    }])
+
+    if os.path.exists(arquivo):
+        df_existente = pd.read_csv(arquivo)
+        df_atualizado = pd.concat([df_existente, df_novo], ignore_index=True)
+        df_atualizado.to_csv(arquivo, index=False, encoding='utf-8-sig')
+
+    else:
+        df_novo.to_csv(arquivo, index=False, encoding='utf-8-sig')
+
+    sleep(300)
